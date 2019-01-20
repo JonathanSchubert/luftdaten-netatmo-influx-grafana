@@ -1,0 +1,4 @@
+pandas
+influxdb
+bs4
+lxml
