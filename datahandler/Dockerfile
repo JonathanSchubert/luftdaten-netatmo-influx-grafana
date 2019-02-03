@@ -5,6 +5,6 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY get_data.py ./get_data.py
-
-CMD [ "python", "-u", "./get_data.py" ]
+COPY main.py ./main.py
+COPY lib ./lib
+CMD [ "python", "-u", "./main.py" ]

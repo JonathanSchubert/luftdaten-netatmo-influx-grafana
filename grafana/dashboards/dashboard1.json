@@ -14,7 +14,7 @@
   },
   "editable": true,
   "gnetId": null,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "links": [],
   "panels": [
     {
@@ -28,7 +28,7 @@
         "#b7dbab",
         "#d44a3a"
       ],
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": 1,
       "format": "celsius",
       "gauge": {
@@ -145,7 +145,7 @@
         "#70dbed",
         "#0a50a1"
       ],
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": 1,
       "format": "percent",
       "gauge": {
@@ -262,11 +262,11 @@
         "#e5ac0e",
         "#bf1b00"
       ],
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": 1,
       "format": "none",
       "gauge": {
-        "maxValue": 50,
+        "maxValue": 40,
         "minValue": 0,
         "show": true,
         "thresholdLabels": false,
@@ -379,11 +379,11 @@
         "#e5ac0e",
         "#bf1b00"
       ],
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": 1,
       "format": "none",
       "gauge": {
-        "maxValue": 50,
+        "maxValue": 70,
         "minValue": 0,
         "show": true,
         "thresholdLabels": false,
@@ -470,7 +470,7 @@
           "tags": []
         }
       ],
-      "thresholds": "10,30",
+      "thresholds": "20,50",
       "timeFrom": "1h",
       "title": "PM10",
       "transparent": true,
@@ -494,7 +494,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": null,
       "format": "dateTimeFromNow",
       "gauge": {
@@ -592,7 +592,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": 1,
       "fill": 3,
       "gridPos": {
@@ -624,7 +624,9 @@
       "pointradius": 0.5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {}
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -671,11 +673,23 @@
       ],
       "thresholds": [
         {
-          "colorMode": "critical",
+          "colorMode": "custom",
           "fill": true,
-          "line": true,
+          "fillColor": "rgba(252, 234, 202, 0.2)",
+          "line": false,
+          "lineColor": "rgb(234, 184, 57)",
           "op": "gt",
-          "value": 30,
+          "value": 10,
+          "yaxis": "left"
+        },
+        {
+          "colorMode": "custom",
+          "fill": true,
+          "fillColor": "rgba(191, 27, 0, 0.09)",
+          "line": false,
+          "lineColor": "#bf1b00",
+          "op": "gt",
+          "value": 25,
           "yaxis": "left"
         }
       ],
@@ -704,7 +718,7 @@
           "label": "",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -724,13 +738,16 @@
     },
     {
       "aliasColors": {
-        "PM10": "#bf1b00",
-        "Temp": "#0a50a1"
+        "PM10": "rgba(191, 27, 0, 0.25)",
+        "PM10_1hr_mean": "#bf1b00",
+        "Temp": "#0a50a1",
+        "UBA_PM10": "rgb(0, 0, 0)",
+        "uba.PM10": "rgba(0, 0, 0, 0.26)"
       },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "InfluxDB",
+      "datasource": "-- Mixed --",
       "decimals": 1,
       "fill": 3,
       "gridPos": {
@@ -762,13 +779,27 @@
       "pointradius": 0.5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "UBA_PM10",
+          "lines": false,
+          "pointradius": 1,
+          "points": true
+        },
+        {
+          "alias": "PM10_1hr_mean",
+          "lines": false,
+          "pointradius": 1,
+          "points": true
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
           "alias": "PM10",
+          "datasource": "InfluxDB_ld",
           "dsType": "influxdb",
           "groupBy": [
             {
@@ -805,15 +836,95 @@
             ]
           ],
           "tags": []
+        },
+        {
+          "alias": "UBA_PM10",
+          "datasource": "InfluxDB_uba",
+          "groupBy": [
+            {
+              "params": [
+                "$interval"
+              ],
+              "type": "time"
+            }
+          ],
+          "measurement": "uba",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "PM10"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "alias": "PM10_1hr_mean",
+          "datasource": "InfluxDB_ld",
+          "groupBy": [
+            {
+              "params": [
+                "1h"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "luftdaten",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "C",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "SDS_P1"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
         }
       ],
       "thresholds": [
         {
-          "colorMode": "warning",
+          "colorMode": "custom",
           "fill": true,
+          "fillColor": "rgba(252, 234, 202, 0.49)",
           "line": false,
           "op": "gt",
-          "value": 40,
+          "value": 20,
+          "yaxis": "left"
+        },
+        {
+          "colorMode": "custom",
+          "fill": true,
+          "fillColor": "rgba(191, 27, 0, 0.12)",
+          "line": false,
+          "op": "gt",
+          "value": 50,
           "yaxis": "left"
         }
       ],
@@ -842,7 +953,7 @@
           "label": "",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -867,7 +978,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": 1,
       "fill": 3,
       "gridPos": {
@@ -996,7 +1107,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "decimals": 1,
       "fill": 3,
       "gridPos": {
@@ -1123,19 +1234,374 @@
       }
     },
     {
+      "columns": [],
+      "datasource": "InfluxDB_ld",
+      "fontSize": "100%",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "hideTimeOverride": true,
+      "id": 18,
+      "links": [],
+      "pageSize": null,
+      "scroll": true,
+      "showHeader": true,
+      "sort": {
+        "col": 0,
+        "desc": true
+      },
+      "styles": [
+        {
+          "alias": "Day",
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "link": false,
+          "pattern": "Time",
+          "type": "date"
+        },
+        {
+          "alias": "",
+          "colorMode": "cell",
+          "colors": [
+            "rgba(50, 172, 45, 0.97)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(245, 54, 54, 0.9)"
+          ],
+          "decimals": 1,
+          "pattern": "PM10",
+          "thresholds": [
+            "20",
+            "50"
+          ],
+          "type": "number",
+          "unit": "conmgm3"
+        },
+        {
+          "alias": "",
+          "colorMode": "cell",
+          "colors": [
+            "rgba(50, 172, 45, 0.97)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(245, 54, 54, 0.9)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 1,
+          "mappingType": 1,
+          "pattern": "PM2.5",
+          "thresholds": [
+            "10",
+            "25"
+          ],
+          "type": "number",
+          "unit": "conmgm3"
+        }
+      ],
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "24h"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "luftdaten",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "SDS_P1"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "PM10"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "SDS_P2"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "PM2.5"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "timeFrom": "2400h",
+      "timeShift": null,
+      "title": "Daily Average",
+      "transform": "table",
+      "type": "table"
+    },
+    {
+      "aliasColors": {
+        "PM10": "#9ac48a",
+        "PM2.5": "#e24d42",
+        "Temp": "#0a50a1",
+        "uba.max": "rgb(0, 0, 0)",
+        "uba.mean": "rgba(0, 0, 0, 0.48)"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "-- Mixed --",
+      "decimals": 1,
+      "fill": 0,
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      },
+      "hideTimeOverride": false,
+      "id": 16,
+      "legend": {
+        "alignAsTable": false,
+        "avg": true,
+        "current": true,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": false,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pointradius": 0.5,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "PM10",
+          "yaxis": 2
+        },
+        {
+          "alias": "uba.mean",
+          "pointradius": 2,
+          "yaxis": 2
+        },
+        {
+          "alias": "uba.max",
+          "yaxis": 2
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "PM2.5",
+          "datasource": "InfluxDB_ld",
+          "dsType": "influxdb",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "measurement": "luftdaten",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "SDS_P2"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "alias": "PM10",
+          "datasource": "InfluxDB_ld",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "luftdaten",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "SDS_P1"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "datasource": "InfluxDB_uba",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "uba",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "C",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "PM10"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "PM2.5",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": false,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "conmgm3",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "decimals": 0,
+          "format": "conmgm3",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
       "aliasColors": {
         "count": "rgb(3, 3, 3)"
       },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "InfluxDB",
+      "datasource": "InfluxDB_ld",
       "fill": 1,
       "gridPos": {
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 19
+        "y": 26
       },
       "id": 11,
       "legend": {
@@ -1152,6 +1618,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "links": [],
       "nullPointMode": "null",
       "percentage": false,
       "pointradius": 5,
@@ -1203,12 +1670,13 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Panel Title",
+      "title": "Histogram Temperature",
       "tooltip": {
         "shared": false,
         "sort": 0,
         "value_type": "cumulative"
       },
+      "transparent": false,
       "type": "graph",
       "xaxis": {
         "buckets": 20,
@@ -1243,107 +1711,109 @@
       }
     },
     {
-      "aliasColors": {
-        "PM10": "#9ac48a",
-        "PM2.5": "#e24d42",
-        "Temp": "#0a50a1"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "InfluxDB",
-      "decimals": 1,
-      "fill": 0,
+      "datasource": "-- Mixed --",
       "gridPos": {
-        "h": 7,
+        "h": 9,
         "w": 12,
-        "x": 12,
-        "y": 19
+        "x": 0,
+        "y": 31
       },
-      "hideTimeOverride": false,
-      "id": 16,
-      "legend": {
-        "alignAsTable": false,
-        "avg": true,
-        "current": true,
-        "hideEmpty": false,
-        "hideZero": false,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": false,
-      "linewidth": 1,
+      "id": 20,
       "links": [],
-      "nullPointMode": "connected",
-      "percentage": false,
-      "pointradius": 0.5,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "PM10",
-          "yaxis": 2
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
+      "pconfig": {
+        "layout": {
+          "dragmode": "lasso",
+          "font": {
+            "family": "\"Open Sans\", Helvetica, Arial, sans-serif"
+          },
+          "hovermode": "closest",
+          "legend": {
+            "orientation": "h"
+          },
+          "showlegend": false,
+          "xaxis": {
+            "range": null,
+            "rangemode": "normal",
+            "showgrid": true,
+            "type": "linear",
+            "zeroline": false
+          },
+          "yaxis": {
+            "range": null,
+            "rangemode": "normal",
+            "showgrid": true,
+            "type": "linear",
+            "zeroline": false
+          },
+          "zaxis": {
+            "range": null,
+            "rangemode": "normal",
+            "showgrid": true,
+            "type": "linear",
+            "zeroline": false
+          }
+        },
+        "settings": {
+          "displayModeBar": false,
+          "type": "scatter"
+        },
+        "traces": [
+          {
+            "mapping": {
+              "color": "PM10_LD",
+              "size": null,
+              "text": null,
+              "x": "PM10_LD",
+              "y": "PM10_UBA",
+              "z": null
+            },
+            "name": "Trace 1",
+            "settings": {
+              "color_option": "ramp",
+              "line": {
+                "color": "#005f81",
+                "dash": "dashdot",
+                "shape": "hv",
+                "width": 1
+              },
+              "marker": {
+                "color": "#33B5E5",
+                "colorscale": "Portland",
+                "line": {
+                  "color": "#DDD",
+                  "width": 0
+                },
+                "showscale": true,
+                "size": 8,
+                "sizemin": 3,
+                "sizemode": "diameter",
+                "sizeref": 0.2,
+                "symbol": "diamond"
+              },
+              "textposition": "top"
+            },
+            "show": {
+              "line": true,
+              "lines": false,
+              "markers": true
+            }
+          }
+        ]
+      },
       "targets": [
         {
-          "alias": "PM2.5",
-          "dsType": "influxdb",
+          "alias": "PM10_LD",
+          "datasource": "InfluxDB_ld",
           "groupBy": [
             {
               "params": [
-                "$__interval"
+                "1h"
               ],
               "type": "time"
             },
             {
               "params": [
-                "none"
-              ],
-              "type": "fill"
-            }
-          ],
-          "hide": false,
-          "measurement": "luftdaten",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "SDS_P2"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              }
-            ]
-          ],
-          "tags": []
-        },
-        {
-          "alias": "PM10",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "none"
+                "null"
               ],
               "type": "fill"
             }
@@ -1368,54 +1838,52 @@
             ]
           ],
           "tags": []
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "PM2.5",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transparent": false,
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": 0,
-          "format": "conmgm3",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
         },
         {
-          "decimals": 0,
-          "format": "conmgm3",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
+          "alias": "PM10_UBA",
+          "datasource": "InfluxDB_uba",
+          "groupBy": [
+            {
+              "params": [
+                "1h"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "uba",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "PM10"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
         }
       ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
+      "title": "PM10: Luftdaten vs UBA",
+      "type": "natel-plotly-panel",
+      "version": 1
     }
   ],
-  "refresh": "1m",
+  "refresh": "30s",
   "schemaVersion": 16,
   "style": "dark",
   "tags": [],
@@ -1434,24 +1902,23 @@
       "1m",
       "5m",
       "15m",
-      "30m",
       "1h",
-      "2h",
       "1d"
     ],
     "time_options": [
       "5m",
-      "15m",
       "1h",
       "6h",
-      "12h",
       "24h",
       "2d",
+      "3d",
       "7d",
+      "10d",
+      "14d",
       "30d"
     ]
   },
-  "timezone": "",
+  "timezone": "browser",
   "title": "Luftdaten",
   "uid": "xOEfcfwmz",
   "version": 1
