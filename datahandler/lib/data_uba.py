@@ -32,7 +32,7 @@ class UBA(Data):
                              'user':     os.getenv('INFLUX_USER', 'admin'),
                              'password': os.getenv('INFLUX_PASSWORD', 'admin'),
                              'dbname':   os.getenv('INFLUX_DB_UBA', 'uba'),
-                             'protocol': 'json'}
+                             'protocol': 'line'}
 
 
     def update_data_today(self):

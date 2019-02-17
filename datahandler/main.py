@@ -1,9 +1,13 @@
 import time
 
+from lib.data_netatmo import Netatmo
 from lib.data_luftdaten import Luftdaten
 from lib.data_uba import UBA
 
 def main():
+
+    netatmo = Netatmo()
+    netatmo.update_data_complete()
 
     luftdaten = Luftdaten()
     luftdaten.update_data_complete()
@@ -15,6 +19,6 @@ def main():
         luftdaten.update_data_today()
         uba.update_data_today()
 
-        time.sleep(120)
+        time.sleep(30)
 
 main()

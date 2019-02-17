@@ -30,7 +30,7 @@ class Luftdaten(Data):
                              'user':     os.getenv('INFLUX_USER', 'admin'),
                              'password': os.getenv('INFLUX_PASSWORD', 'admin'),
                              'dbname':   os.getenv('INFLUX_DB_LD', 'luftdaten'),
-                             'protocol': 'json'}
+                             'protocol': 'line'}
 
         self.sensors = {'Temperature': 'Temp',
                         'Humidity':    'Humidity',

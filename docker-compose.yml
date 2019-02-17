@@ -6,8 +6,7 @@ services:
     env_file: configuration.env
     ports:
       - 8086:8086
-    # volumes:
-    #   - influxdb_data:/var/lib/influxdb
+
   grafana:
     build: grafana
     env_file: configuration.env
@@ -15,17 +14,12 @@ services:
       - influxdb
     ports:
       - 3000:3000
-    # volumes:
-    #   - grafana_data:/var/lib/grafana
+
     user: "104"
   datahandler:
     build: datahandler
     env_file: configuration.env
     links:
       - influxdb
-    # volumes:
-    #   - influxdb_data:/var/lib/influxdb
-
-# volumes:
-#   grafana_data: {}
-#   influxdb_data: {}
+    volumes:
+      - ~/Desktop/volume:/usr/src/app/data/
