@@ -3,9 +3,11 @@ import re
 import time
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from influxdb import DataFrameClient, InfluxDBClient
 from bs4 import BeautifulSoup
+import json
+
 
 from lib.data import Data
 
@@ -15,12 +17,17 @@ class UBA(Data):
     def __init__(self):
         Data.__init__(self)
 
-
     def set_config(self):
         # Config
 
-        self.remote_file_data = 'https://www.umweltbundesamt.de/uaq/csv/stations/data'
-        self.station_id       = os.getenv('UBA_SENSOR_ID')
+        self.remote_file_data    = 'https://www.umweltbundesamt.de/uaq/csv/stations/data'
+        self.station_id          = os.getenv('UBA_SENSOR_ID')
+        self.local_file_data     = './data/uba_{}.csv'
+        self.sensor_file         = './data/sensors_uba.json'
+
+        self.history_start       = '2014-01-01T00:00:00'
+        self.hours_update_buffer = 3
+        self.update_interval_min = 60 * 55
 
         # # Stations:      DEHH026, DEBE065
         # # Parameters:    PM10, NO2, O3, CO, SO2
@@ -34,52 +41,17 @@ class UBA(Data):
                              'dbname':   os.getenv('INFLUX_DB_UBA', 'uba'),
                              'protocol': 'line'}
 
-
-    def update_data_today(self):
-
-        # Retrieve data
-        data = self._retrieve_data_lastdays(1)
-
-        # Write data to DB
-        client = self._get_connection_db()
-        self._write_data(client, data)
-
-
-    def update_data_complete(self):
-        print('Retrieve complete {} history...'.format(self.dataname))
-
-        # Retrieve data
-        start = '2015-01-01T00:00:00'
-        end   = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        data  = self._retrieve_data_period(start, end)
-
-        # Write data to DB
-        client = self._get_connection_db()
-        self._write_data(client, data)
-
-
-    def _retrieve_data_lastdays(self, days):
-        print('Retrieve {} data for last {} days'.format(self.dataname, days))
-
-        now = datetime.now().timestamp()
-        ts_start = int(now-days*24*3600)
-        ts_end   = int(now+3600)
-
-        data = self._retrieve_data(self.station_id, 'PM10', ts_start, ts_end)
-        return data
-
-
     def _retrieve_data_period(self, dtg_start, dtg_end):
-        ts_start = int(datetime.strptime(dtg_start, '%Y-%m-%dT%H:%M:%S').timestamp())
-        ts_end = int(datetime.strptime(dtg_end, '%Y-%m-%dT%H:%M:%S').timestamp()+3600)
+        ts_start = dtg_start.timestamp()
+        ts_end = dtg_end.timestamp()+3600
 
-        data = self._retrieve_data(self.station_id, 'PM10', ts_start, ts_end)
+        data = self._retrieve_data(self.station_id, ts_start, ts_end)
         return data
 
-
-    def _retrieve_data(self, station, parameter, ts_start, ts_end):
+    def _retrieve_data(self, station, ts_start, ts_end):
+        sensor = 'PM10'
         param_dict = {'station[]': station,
-                      'pollutant[]': parameter,
+                      'pollutant[]': sensor,
                       'scope[]': '1SMW',
                       'group[]': 'station',
                       'range[]': f'{ts_start},{ts_end}',
@@ -89,8 +61,8 @@ class UBA(Data):
         url_param = f'{self.remote_file_data}?{param}'
 
         data = pd.read_csv(url_param, encoding = "ISO-8859-1", sep=';')
-        data = data.rename(columns={'Zeit': 'Time', 'Messwert (in µg/m³)': 'PM10'})
+        data = data.rename(columns={'Zeit': 'Time', 'Messwert (in µg/m³)': sensor})
 
         data.index = pd.to_datetime(data.Time, format='%d.%m.%Y %H:%M')
-        data = data[['PM10']]
-        return data
+        data = data[[sensor]]
+        return {sensor: data}

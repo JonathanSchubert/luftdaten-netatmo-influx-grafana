@@ -14,8 +14,8 @@ services:
       - influxdb
     ports:
       - 3000:3000
-
     user: "104"
+
   datahandler:
     build: datahandler
     env_file: configuration.env

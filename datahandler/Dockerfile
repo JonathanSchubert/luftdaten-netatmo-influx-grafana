@@ -9,7 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py ./main.py
 COPY lib ./lib
 
-RUN mkdir -p netatmo_data
 COPY netatmo.sh ./netatmo.sh
 RUN chmod +x netatmo.sh
 

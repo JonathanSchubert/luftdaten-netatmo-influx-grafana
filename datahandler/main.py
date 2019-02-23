@@ -7,18 +7,19 @@ from lib.data_uba import UBA
 def main():
 
     netatmo = Netatmo()
-    netatmo.update_data_complete()
+    netatmo.create_history()
 
     luftdaten = Luftdaten()
-    luftdaten.update_data_complete()
+    luftdaten.create_history()
 
     uba       = UBA()
-    uba.update_data_complete()
+    uba.create_history()
 
     while True:
-        luftdaten.update_data_today()
-        uba.update_data_today()
+        uba.update_latest_data()
+        netatmo.update_latest_data()
+        luftdaten.update_latest_data()
 
-        time.sleep(30)
+        time.sleep(60)
 
 main()

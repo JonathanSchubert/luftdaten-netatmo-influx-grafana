@@ -1,12 +1,14 @@
 import os
 import re
+import glob
 import time
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from influxdb import DataFrameClient, InfluxDBClient
 from bs4 import BeautifulSoup
 import subprocess
+import dateutil.rrule as rrule
 
 from lib.data import Data
 
@@ -16,10 +18,15 @@ class Netatmo(Data):
     def __init__(self):
         Data.__init__(self)
 
-
     def set_config(self):
         # Config
-        self.local_file_data = '/usr/src/app/netatmo_data/'
+        self.local_file_tmp_data = './data/netatmo_tmp_data/'
+        self.local_file_data     = './data/netatmo_{}.csv'
+        self.sensor_file         = './data/sensors_netatmo.json'
+
+        self.history_start       = '2016-04-01T00:00:00'
+        self.hours_update_buffer = 3
+        self.update_interval_min = 60 * 5
 
         self.influxdb_cfg = {'host':     os.getenv('INFLUX_HOST', 'localhost'),
                              'port':     8086,
@@ -28,86 +35,58 @@ class Netatmo(Data):
                              'dbname':   os.getenv('INFLUX_DB_NA', 'netatmo'),
                              'protocol': 'line'}
 
-    def update_data_today(self):
+    def _retrieve_data_period(self, dtg_start, dtg_end):
 
-        # Retrieve data
-        data = self._retrieve_data_lastdays(1)
-
-        # Write data to DB
-        client = self._get_connection_db()
-        self._write_data(client, data)
-
-
-    def update_data_complete(self):
-        print('Retrieve complete {} history...'.format(self.dataname))
-
-        # Retrieve data
-        start = '2018-12-01 00:00:00'
-        data  = self._retrieve_data_period(start)
-
-        # Write data to DB
-        client = self._get_connection_db()
-        for data_para in data:
-            self._write_data(client, data_para)
-
-
-    # def _retrieve_data_lastdays(self, days):
-    #     print('Retrieve {} data for last {} days'.format(self.dataname, days))
-    #
-    #     now = datetime.now().timestamp()
-    #     ts_start = int(now-days*24*3600)
-    #     ts_end   = int(now+3600)
-    #
-    #     data = self._retrieve_data(self.station_id, 'PM10', ts_start, ts_end)
-    #     return data
-
-
-    def _retrieve_data_period(self, dtg_start):
-
-        data_dir = self.local_file_data
+        tmp_dir = self.local_file_tmp_data
+        self._make_dir_avalable(tmp_dir)
 
         # delete files in folder
-        files = os.listdir(data_dir)
-        # if len(files) != 0:
-        #     import pdb; pdb.set_trace()
+        files = os.listdir(tmp_dir)
+        if len(files) != 0:
+            [os.remove(tmp_dir + x) for x in files]
 
         # Fetch files
-        subprocess.run(['/usr/src/app/netatmo.sh', '-s', dtg_start])
-        # import pdb; pdb.set_trace()
+        for i, this_period in enumerate(self.periods_aligned(dtg_start, dtg_end)):
+            if i == 0:
+                last_period = this_period
+                continue
+            dtg_end_this   = this_period.strftime('%Y-%m-%d %H:%M:%S')
+            dtg_start_this = last_period.strftime('%Y-%m-%d %H:%M:%S')
+            last_period = this_period
+            print(dtg_start_this, dtg_end_this)
+
+            subprocess.run(['/usr/src/app/netatmo.sh', '-s', dtg_start_this, '-e', dtg_end_this, '-o', tmp_dir])
 
         # Ensure files are present
-        files = os.listdir(data_dir)
+        files = os.listdir(tmp_dir)
         # if len(files) != 7:
         #     import pdb; pdb.set_trace()
 
         # Read files
-        data_all = []
+        data_all = {}
         for file in files:
-
             station, sensor, *_ = file.split('_')
-            data = pd.read_csv(data_dir + file, sep=';', header=2)
+            this_id = '_'.join([station, sensor])
+
+            data = pd.read_csv(tmp_dir + file, sep=';', header=2)
             data = data[['Timestamp', sensor]]
-            data = data.rename(columns={'Timestamp': 'Time', sensor: '_'.join([station, sensor])})
+            data = data.rename(columns={'Timestamp': 'Time', sensor: this_id})
             data = data.set_index(pd.to_datetime(data.Time, unit='s')).drop('Time', 1)
-            data_all.append(data)
 
-        return data_all
+            if this_id in data_all.keys():
+                data_all[this_id].append(data)
+            else:
+                data_all[this_id] = [data]
 
+        data_all2 = {}
+        for this_id in data_all.keys():
+            data_all2[this_id] = pd.concat(data_all[this_id]).sort_index()
 
-    # def _retrieve_data(self, station, parameter, ts_start, ts_end):
-    #     param_dict = {'station[]': station,
-    #                   'pollutant[]': parameter,
-    #                   'scope[]': '1SMW',
-    #                   'group[]': 'station',
-    #                   'range[]': f'{ts_start},{ts_end}',
-    #                   # 'network[]': 'HH',
-    #                  }
-    #     param ='&'.join([x + '=' + y for x,y in param_dict.items()])
-    #     url_param = f'{self.remote_file_data}?{param}'
-    #
-    #     data = pd.read_csv(url_param, encoding = "ISO-8859-1", sep=';')
-    #     data = data.rename(columns={'Zeit': 'Time', 'Messwert (in µg/m³)': 'PM10'})
-    #
-    #     data.index = pd.to_datetime(data.Time, format='%d.%m.%Y %H:%M')
-    #     data = data[['PM10']]
-    #     return data
+        return data_all2
+
+    def periods_aligned(self, start, end, inc = True):
+        if inc: yield start
+        rule = rrule.rrule(rrule.YEARLY, byminute = 0, bysecond = 0, dtstart=start)
+        for x in rule.between(start, end, inc = False):
+            yield x
+        if inc: yield end
