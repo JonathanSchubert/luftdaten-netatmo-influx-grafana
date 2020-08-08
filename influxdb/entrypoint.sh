@@ -8,8 +8,9 @@ if [ ! -f "/var/lib/influxdb/.init" ]; then
     done
 
     influx -host=localhost -port=8086 -execute="CREATE USER ${INFLUX_USER} WITH PASSWORD '${INFLUX_PASSWORD}' WITH ALL PRIVILEGES"
-    influx -host=localhost -port=8086 -execute="CREATE DATABASE ${INFLUX_DB}"    
-    
+    influx -host=localhost -port=8086 -execute="CREATE DATABASE ${INFLUX_DB}"
+    influx -level=error
+
     touch "/var/lib/influxdb/.init"
 
     kill -s TERM %1
