@@ -240,7 +240,7 @@ getmeasurecsv() {
 
     # shameless stolen from Michael Miklis,
     # https://www.michaelmiklis.de/export-netatmo-weather-station-data-to-csv-excel/
-
+    
     # ------------------------------------------------------
     # Help
     # ------------------------------------------------------
@@ -270,10 +270,10 @@ getmeasurecsv() {
     # ------------------------------------------------------
     # Define some constants
     # ------------------------------------------------------
-    URL_LOGIN="https://auth.netatmo.com/de-DE/access/login"
+    URL_LOGIN="https://auth.netatmo.com/en-us/access/login"
+    URL_POSTLOGIN="https://auth.netatmo.com/access/postlogin"
     API_GETMEASURECSV="https://api.netatmo.com/api/getmeasurecsv"
     SESSION_COOKIE="cookie_sess.txt"
-    AUTH_COOKIE="cookie_auth.txt"
 
 
     # ------------------------------------------------------
@@ -301,36 +301,33 @@ getmeasurecsv() {
     TIMEEND="$(urlencode $TIMEEND)"
     FORMAT="$(urlencode $FORMAT)"
 
-
     # ------------------------------------------------------
     # Now let's fetch the data
     # ------------------------------------------------------
 
-    # first we need to get a valid session cookie
-    curl --silent -c $AUTH_COOKIE $URL_LOGIN  > /dev/null
-
-    # then extract the ID from the authentication cookie
-    SESS_ID="$(cat $AUTH_COOKIE | grep netatmocomci_csrf_cookie_na | cut -f7)"
+    # get token from hidden <input> field
+    # TOKEN="$(curl --silent -c $SESSION_COOKIE $URL_LOGIN | sed -n '/token/s/.*name="_token"s+value="([^"]+).*/1/p')"
+    curl --silent -c $SESSION_COOKIE $URL_LOGIN > test.txt
+    TOKEN="$(grep '_token' test.txt | awk -F'value="' '{print $2;exit}' | sed 's/">//')"
+    echo $TOKEN  >&2
 
     # and now we can login using cookie, id, user and password
-    curl --silent -d "ci_csrf_netatmo=$SESS_ID&mail=$USER&pass=$PASS&log_submit=LOGIN" -b $AUTH_COOKIE -c $SESSION_COOKIE  $URL_LOGIN > /dev/null
+    curl --silent -d "_token=$TOKEN&email=$USER&password=$PASS" -b $SESSION_COOKIE -c $SESSION_COOKIE $URL_POSTLOGIN > /dev/null
 
     # next we extract the access_token from the session cookie
     ACCESS_TOKEN="$(cat $SESSION_COOKIE | grep netatmocomaccess_token | cut -f7)"
-
+    echo $ACCESS_TOKEN  >&2
     # build the POST data
     PARAM="access_token=$ACCESS_TOKEN&device_id=$DEVICE_ID&type=$TYPE&module_id=$MODULE_ID&scale=max&format=$FORMAT&datebegin=$DATEBEGIN&timebegin=$TIMEBEGIN&dateend=$DATEEND&timeend=$TIMEEND&date_begin=$DATE_BEGIN&date_end=$DATE_END"
 
     # now download data as csv
-    retrieved_data=$(curl -d $PARAM $API_GETMEASURECSV)
-    if [ $? -eq 0 ];then
-        echo "${retrieved_data}"
-    fi
+    curl -d $PARAM $API_GETMEASURECSV
 
     # clean up
     rm $SESSION_COOKIE
-    rm $AUTH_COOKIE
+    rm test.txt
 }
+
 
 #------------------------------------------------------------------------------
 listDevices() {
@@ -598,6 +595,7 @@ for sensorline in "${sensors_config[@]}"; do
         do
 
 	        # download
+                echo "1"
                 getmeasurecsv        \
                     "${user}"        \
                     "${pass}"        \
@@ -609,11 +607,15 @@ for sensorline in "${sensors_config[@]}"; do
                     "${file_type}"   \
                     > "${outfilename}"
 
+                echo "2"
+
                 # check file size
+          # exit
           # filesize=$(stat -f%z "${outfilename}")
 	        filesize=$(stat -c%s "${outfilename}")
                 if [ "${filesize}" -lt "${min_file_size}" ]; then
                         echo "### ### ### Retrieved file too small. Expected ${min_file_size}, got ${filesize} bytes. Retrying. ### ### ###"
+                        cat ${outfilename}
                         /bin/rm "${outfilename}"
                         try=$(($try+1))
                 else
