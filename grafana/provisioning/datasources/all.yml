@@ -34,3 +34,14 @@ datasources:
   user: admin
   password: admin
   database: netatmo
+- name: 'InfluxDB_dwd'
+  type: 'influxdb'
+  access: 'proxy'
+  org_id: 1
+  url: 'http://influxdb:8086'
+  is_default: false
+  version: 1
+  editable: true
+  user: admin
+  password: admin
+  database: dwd
