@@ -1,10 +1,8 @@
 import os
 import re
-import time
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
-from influxdb import DataFrameClient, InfluxDBClient
+from datetime import datetime
 from bs4 import BeautifulSoup
 from io import BytesIO
 from zipfile import ZipFile
@@ -19,7 +17,8 @@ class Luftdaten(Data):
 
     def set_config(self):
         # Config
-        self.remote_data         = 'https://www.madavi.de/sensor/'
+        # self.remote_data         = 'https://www.madavi.de/sensor/'
+        self.remote_data         = 'https://api-rrd.madavi.de/'
         self.remote_file_data    = 'https://www.madavi.de/sensor/data_csv/data-{}-{}.csv'
         self.remote_file_list    = 'https://www.madavi.de/sensor/csvfiles.php?sensor={}'
         self.station_id          = os.getenv('LD_SENSOR_ID')
