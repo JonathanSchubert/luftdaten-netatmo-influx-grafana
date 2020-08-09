@@ -4,8 +4,11 @@ import os
 import json
 import pandas as pd
 from datetime import datetime, timedelta
+import requests
+import time
+from influxdb import DataFrameClient
+import numpy as np
 
-from influxdb import DataFrameClient, InfluxDBClient
 
 class Data(ABC):
 
@@ -56,6 +59,7 @@ class Data(ABC):
         end     = datetime.now() + buffer_time
 
         # Get data
+        print(last_ts, end)
         data  = self._retrieve_data_period(last_ts, end)
 
         # Write data to local file and DB
@@ -65,6 +69,23 @@ class Data(ABC):
             self._write_data_db(client, data_sensor)
 
         self.write_sensor_file(data_sensor.sort_index().index[-1], list(data.keys()))
+
+    def write_complete_history_to_db(self):
+        print(f'Write complete {self.dataname} history to DB...')
+
+        # Get sensors
+        sensor_dict = self.read_sensor_file()
+
+        client = self._get_connection_db()
+        for sensor in sensor_dict['sensors'][::-1]:
+            print(f'   {sensor}...')
+            data_sensor = self._read_local_file(sensor)
+
+            n_splits = int(np.ceil(data_sensor.shape[0] / 100000))
+            print(f'   ...Import splitted into {n_splits} parts')
+            data_sensor_splits = np.array_split(data_sensor, n_splits)
+            for data_sensor_split in data_sensor_splits:
+                self._write_data_db(client, data_sensor_split)
 
     def _get_connection_db(self):
 
@@ -101,12 +122,24 @@ class Data(ABC):
     def _write_data_db(self, client, data):
         dbname = self.influxdb_cfg['dbname']
         n_entries = data.shape[0]
-
         self._create_table_if_needed(client, dbname)
-        client.write_points(data,
-                            self.influxdb_cfg['dbname'],
-                            protocol=self.influxdb_cfg['protocol'])
+        conn_ok  = False
 
+        while not conn_ok:
+            try:
+
+                if dbname == 'uba':
+                    data = data.astype(int)
+                client.write_points(data,
+                                    self.influxdb_cfg['dbname'],
+                                    protocol=self.influxdb_cfg['protocol'])
+            except requests.exceptions.ConnectionError:
+                print('   ...no InfluxDB connection yet. Waiting 5 seconds and retrying.')
+                time.sleep(5)
+                client = self._get_connection_db()
+            else:
+                print('   ...ok!')
+                conn_ok = True
         print('   ...imported {} entries into table {}'.format(n_entries, dbname))
 
     def _create_table_if_needed(self, client, tablename):
