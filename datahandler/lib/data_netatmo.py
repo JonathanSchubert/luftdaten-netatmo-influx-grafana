@@ -1,12 +1,5 @@
 import os
-import re
-import glob
-import time
-import requests
 import pandas as pd
-from datetime import datetime, timedelta
-from influxdb import DataFrameClient, InfluxDBClient
-from bs4 import BeautifulSoup
 import subprocess
 import dateutil.rrule as rrule
 
@@ -54,8 +47,9 @@ class Netatmo(Data):
             dtg_start_this = last_period.strftime('%Y-%m-%d %H:%M:%S')
             last_period = this_period
             print(dtg_start_this, dtg_end_this)
-
-            subprocess.run(['/usr/src/app/netatmo.sh', '-s', dtg_start_this, '-e', dtg_end_this, '-o', tmp_dir])
+            command = ['/usr/src/app/netatmo.sh', '-s', dtg_start_this, '-e', dtg_end_this, '-o', tmp_dir]
+            print(command)
+            subprocess.run(command)
 
         # Ensure files are present
         files = os.listdir(tmp_dir)
@@ -84,9 +78,11 @@ class Netatmo(Data):
 
         return data_all2
 
-    def periods_aligned(self, start, end, inc = True):
-        if inc: yield start
-        rule = rrule.rrule(rrule.YEARLY, byminute = 0, bysecond = 0, dtstart=start)
-        for x in rule.between(start, end, inc = False):
+    def periods_aligned(self, start, end, inc=True):
+        if inc:
+            yield start
+        rule = rrule.rrule(rrule.YEARLY, byminute=0, bysecond=0, dtstart=start)
+        for x in rule.between(start, end, inc=False):
             yield x
-        if inc: yield end
+        if inc:
+            yield end
