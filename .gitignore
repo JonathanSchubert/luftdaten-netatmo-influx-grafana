@@ -4,4 +4,7 @@ other
 sensor_id.txt
 *.pyc
 *.ipynb
+.ipynb_checkpoints
 configuration_my.env
+cookie_sess2.txt
+datahandler/lib_old

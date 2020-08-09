@@ -81,11 +81,12 @@ class Data(ABC):
             print(f'   {sensor}...')
             data_sensor = self._read_local_file(sensor)
 
-            n_splits = int(np.ceil(data_sensor.shape[0] / 100000))
+            n_splits = int(np.ceil(data_sensor.shape[0] / 50000))
             print(f'   ...Import splitted into {n_splits} parts')
             data_sensor_splits = np.array_split(data_sensor, n_splits)
             for data_sensor_split in data_sensor_splits:
                 self._write_data_db(client, data_sensor_split)
+                time.sleep(1)
 
     def _get_connection_db(self):
 
@@ -127,7 +128,6 @@ class Data(ABC):
 
         while not conn_ok:
             try:
-
                 if dbname == 'uba':
                     data = data.astype(int)
                 client.write_points(data,
