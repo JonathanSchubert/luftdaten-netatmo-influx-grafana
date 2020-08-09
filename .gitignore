@@ -1,10 +1,16 @@
 
 .DS_Store
-other
-sensor_id.txt
 *.pyc
 *.ipynb
 .ipynb_checkpoints
+
+launch.json
+settings.json
+.devcontainer
+
+other
+sensor_id.txt
 configuration_my.env
+configuration_git.env
 cookie_sess2.txt
 datahandler/lib_old
